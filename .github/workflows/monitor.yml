@@ -35,7 +35,7 @@ jobs:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_SUBJECT_PREFIX: "[Monitor Anatel]"
-          SEND_EMAIL_IF_NO_CHANGES: "0"
+          SEND_EMAIL_IF_NO_CHANGES: ${{ vars.SEND_EMAIL_IF_NO_CHANGES || '0' }}
         run: python monitor_anatel.py
 
       - name: Commitar estado e relatorio
