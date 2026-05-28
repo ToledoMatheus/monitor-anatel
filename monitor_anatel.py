@@ -51,7 +51,7 @@ CATEGORIES = {
     "atos-de-certificacao-de-produtos": "Atos de Certificacao de Produtos",
     "atos-de-requisitos-tecnicos-de-gestao-do-espectro": "Atos de Requisitos Tecnicos de Gestao do Espectro",
     "atos-de-numeracao": "Atos de Numeracao",
-    # "resolucoes": "Resolucoes",
+    "resolucoes": "Resolucoes",
     # "sumulas": "Sumulas",
     # "portarias-normativas": "Portarias Normativas",
 }
