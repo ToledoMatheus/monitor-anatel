@@ -184,9 +184,10 @@ def parse_listagem(html: str, category_slug: str, year: int) -> list[Ato]:
             continue
         if f"/{year}/" not in href and not href.endswith(f"/{year}"):
             continue
-        # Filtra apenas itens que parecem ser um ato individual (nao a propria lista)
-        # URLs de detalhe terminam em /{id}-ato-{numero}
-        if not re.search(r"/\d+-ato-\d+(/|$)", href, re.IGNORECASE):
+        # Filtra apenas itens que parecem ser um documento individual (nao a propria lista).
+        # URLs de detalhe seguem o padrao /{id}-{tipo}-{numero}, onde {tipo} pode ser:
+        # - ato, ato-sor, resolucao, resolucao-interna, sumula, portaria etc.
+        if not re.search(r"/\d+-(ato|resolucao|sumula|portaria)[\w\-]*-\d+(/|$)", href, re.IGNORECASE):
             continue
 
         # Deduplica pela URL
@@ -198,7 +199,8 @@ def parse_listagem(html: str, category_slug: str, year: int) -> list[Ato]:
         if m:
             numero = m.group(1)
         else:
-            m = re.search(r"ato-(\d+)", href, re.IGNORECASE)
+            # Tenta extrair o numero da URL: pega o que vem depois do tipo (ato, resolucao, etc.)
+            m = re.search(r"-(?:ato|resolucao|sumula|portaria)[\w\-]*-(\d+)", href, re.IGNORECASE)
             if m:
                 numero = m.group(1)
 
