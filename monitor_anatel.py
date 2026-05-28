@@ -31,6 +31,7 @@ import sqlite3
 import sys
 import time
 from dataclasses import dataclass
+from collections import defaultdict
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -490,13 +491,50 @@ def detectar_mudancas(
 
 
 def montar_relatorio_html(diff: Diff) -> str:
+    """
+    Monta o relatorio HTML agrupando os itens primeiro por tipo de evento
+    (novos / atualizados / revogados) e depois por categoria dentro de
+    cada bloco.
+    """
+
     def li_ato(a: Ato, extra: str = "") -> str:
-        nome_cat = CATEGORIES.get(a.category_slug, a.category_slug)
+        # Cada item agora nao precisa mais mostrar a categoria entre colchetes,
+        # porque ja estamos dentro do sub-bloco da categoria.
         return (
             f'<li><a href="{a.url}">{(a.titulo or a.url)}</a>'
-            f' <span style="color:#666"> [{nome_cat}]</span>'
             f'{(" <em>" + extra + "</em>") if extra else ""}</li>'
         )
+
+    def agrupar_por_categoria(itens: list) -> dict[str, list]:
+        """Agrupa uma lista de atos (ou tuplas) por category_slug."""
+        grupos: dict[str, list] = defaultdict(list)
+        for item in itens:
+            # Atualizados sao tuplas (Ato, diffs); novos e revogados sao Ato puro
+            ato = item[0] if isinstance(item, tuple) else item
+            grupos[ato.category_slug].append(item)
+        return grupos
+
+    def renderiza_bloco(titulo: str, cor: str, itens: list, tem_diffs: bool = False) -> str:
+        """Renderiza um bloco (Novos/Atualizados/Revogados) agrupado por categoria."""
+        if not itens:
+            return ""
+        partes = [f"<h3 style='color:{cor}'>{titulo} ({len(itens)})</h3>"]
+        grupos = agrupar_por_categoria(itens)
+        # Itera nas categorias na ordem em que aparecem em CATEGORIES (mantem consistencia visual)
+        for slug in CATEGORIES:
+            if slug not in grupos:
+                continue
+            nome_cat = CATEGORIES[slug]
+            partes.append(f"<h4 style='margin:8px 0 4px 0;color:#333'>{nome_cat}</h4><ul>")
+            for item in grupos[slug]:
+                if tem_diffs:
+                    ato, diffs = item
+                    extras = "; ".join(f"{k}: {v[0]!r} -> {v[1]!r}" for k, v in diffs.items())
+                    partes.append(li_ato(ato, extras))
+                else:
+                    partes.append(li_ato(item))
+            partes.append("</ul>")
+        return "".join(partes)
 
     partes = ["<html><body style='font-family:Arial,sans-serif'>"]
     partes.append(f"<h2>Monitor Anatel - {datetime.now().strftime('%d/%m/%Y %H:%M')}</h2>")
@@ -506,24 +544,9 @@ def montar_relatorio_html(diff: Diff) -> str:
         f"{len(diff.revogados)} revogado(s).</p>"
     )
 
-    if diff.novos:
-        partes.append("<h3 style='color:#0a7'>Novos atos</h3><ul>")
-        for a in diff.novos:
-            partes.append(li_ato(a))
-        partes.append("</ul>")
-
-    if diff.atualizados:
-        partes.append("<h3 style='color:#a60'>Atos atualizados</h3><ul>")
-        for a, diffs in diff.atualizados:
-            extras = "; ".join(f"{k}: {v[0]!r} -> {v[1]!r}" for k, v in diffs.items())
-            partes.append(li_ato(a, extras))
-        partes.append("</ul>")
-
-    if diff.revogados:
-        partes.append("<h3 style='color:#c00'>Atos revogados</h3><ul>")
-        for a in diff.revogados:
-            partes.append(li_ato(a))
-        partes.append("</ul>")
+    partes.append(renderiza_bloco("Novos", "#0a7", diff.novos))
+    partes.append(renderiza_bloco("Atualizados", "#a60", diff.atualizados, tem_diffs=True))
+    partes.append(renderiza_bloco("Revogados", "#c00", diff.revogados))
 
     if not (diff.novos or diff.atualizados or diff.revogados):
         partes.append("<p><i>Nenhuma mudanca detectada hoje.</i></p>")
@@ -533,8 +556,7 @@ def montar_relatorio_html(diff: Diff) -> str:
         "Fonte: portal de Legislacao da Anatel.</p></body></html>"
     )
     return "".join(partes)
-
-
+  
 def enviar_email(html: str, diff: Diff) -> bool:
     if not (SMTP_HOST and SMTP_USER and SMTP_PASSWORD and EMAIL_TO):
         log.warning("SMTP nao configurado; pulando envio de email.")
