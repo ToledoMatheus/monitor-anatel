@@ -1,0 +1,34 @@
+name: Resetar status do banco (uso pontual)
+
+on:
+  workflow_dispatch:  # Roda APENAS manualmente
+
+permissions:
+  contents: write
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resetar last_detail_at
+        run: python resetar_status.py
+
+      - name: Commitar banco zerado
+        run: |
+          git config user.name  "monitor-anatel-bot"
+          git config user.email "monitor-anatel-bot@users.noreply.github.com"
+          git add anatel_state.sqlite3
+          if ! git diff --cached --quiet; then
+            git commit -m "Reset: zerar last_detail_at para re-checagem"
+            git push
+          else
+            echo "Nada para commitar."
+          fi
