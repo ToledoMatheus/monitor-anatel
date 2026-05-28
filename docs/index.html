@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Anatel — Dashboard</title>
+
+<!-- Chart.js: biblioteca de graficos, carregada por CDN (sem instalacao) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+  /* ============================================================
+     Reset e variaveis de cor
+     ============================================================ */
+  :root {
+    --azul: #1351b4;
+    --azul-escuro: #0c4080;
+    --verde: #168821;
+    --vermelho: #c53727;
+    --amarelo: #f0a800;
+    --cinza-claro: #f5f5f5;
+    --cinza-medio: #ddd;
+    --cinza-texto: #555;
+    --texto-principal: #1a1a1a;
+    --branco: #fff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--cinza-claro);
+    color: var(--texto-principal);
+    line-height: 1.5;
+    padding: 20px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ============================================================
+     Cabecalho
+     ============================================================ */
+  header {
+    background: var(--azul);
+    color: var(--branco);
+    padding: 24px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  header h1 { font-size: 24px; margin-bottom: 4px; }
+  header .subtitulo { opacity: 0.9; font-size: 14px; }
+  header .atualizacao { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+  header a {
+    color: var(--branco);
+    text-decoration: underline;
+    font-size: 12px;
+  }
+
+  /* ============================================================
+     Cards de estatistica (5 no topo)
+     ============================================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--branco);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 4px solid var(--azul);
+  }
+
+  .stat-card.verde { border-left-color: var(--verde); }
+  .stat-card.vermelho { border-left-color: var(--vermelho); }
+  .stat-card.amarelo { border-left-color: var(--amarelo); }
+
+  .stat-card .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--cinza-texto);
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .stat-card .valor {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--texto-principal);
+  }
+
+  /* ============================================================
+     Grafico
+     ============================================================ */
+  .grafico-container {
+    background: var(--branco);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+  }
+
+  .grafico-container h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: var(--cinza-texto);
+  }
+
+  #graficoCategoria { max-height: 300px; }
+
+  /* ============================================================
+     Filtros
+     ============================================================ */
+  .filtros {
+    background: var(--branco);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+
+  .filtros label {
+    display: block;
+    font-size: 12px;
+    color: var(--cinza-texto);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .filtros input, .filtros select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--cinza-medio);
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+
+  .filtros input:focus, .filtros select:focus {
+    outline: none;
+    border-color: var(--azul);
+  }
+
+  .btn {
+    padding: 8px 16px;
+    background: var(--azul);
+    color: var(--branco);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn:hover { background: var(--azul-escuro); }
+
+  /* ============================================================
+     Tabela
+     ============================================================ */
+  .tabela-container {
+    background: var(--branco);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  .tabela-header {
+    padding: 12px 16px;
+    background: var(--cinza-claro);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--cinza-texto);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead { background: var(--cinza-claro); }
+
+  th, td {
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--cinza-medio);
+  }
+
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--cinza-texto);
+    letter-spacing: 0.5px;
+  }
+
+  tbody tr:hover { background: #fafafa; }
+
+  td a {
+    color: var(--azul);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  td a:hover { text-decoration: underline; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .status-Vigente { background: #e7f5e9; color: var(--verde); }
+  .status-Revogado { background: #fbeae7; color: var(--vermelho); }
+  .status-Desconhecido { background: #f5f5f5; color: var(--cinza-texto); }
+
+  /* ============================================================
+     Paginacao
+     ============================================================ */
+  .paginacao {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--cinza-texto);
+    background: var(--cinza-claro);
+  }
+
+  .paginacao button {
+    background: var(--branco);
+    border: 1px solid var(--cinza-medio);
+    padding: 6px 12px;
+    margin: 0 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .paginacao button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .paginacao button:hover:not(:disabled) {
+    background: var(--cinza-claro);
+  }
+
+  /* ============================================================
+     Estado vazio
+     ============================================================ */
+  .vazio {
+    text-align: center;
+    padding: 40px;
+    color: var(--cinza-texto);
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    th, td { padding: 8px; font-size: 13px; }
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- ============================================================
+       Cabecalho
+       ============================================================ -->
+  <header>
+    <h1>📡 Monitor Anatel</h1>
+    <div class="subtitulo">Acompanhamento automatizado de Atos e Resolucoes publicados pela Anatel</div>
+    <div class="atualizacao">
+      Ultima atualizacao: <span id="ultimaAtualizacao">carregando...</span>
+       · 
+      <a href="https://github.com/ToledoMatheus/monitor-anatel" target="_blank" rel="noopener">Codigo-fonte no GitHub</a>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       Cards de estatistica
+       ============================================================ -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total monitorado</div>
+      <div class="valor" id="statTotal">—</div>
+    </div>
+    <div class="stat-card verde">
+      <div class="label">Vigentes</div>
+      <div class="valor" id="statVigentes">—</div>
+    </div>
+    <div class="stat-card vermelho">
+      <div class="label">Revogados</div>
+      <div class="valor" id="statRevogados">—</div>
+    </div>
+    <div class="stat-card amarelo">
+      <div class="label">Novos (30 dias)</div>
+      <div class="valor" id="statNovos30">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Categorias</div>
+      <div class="valor" id="statCategorias">—</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Grafico de distribuicao por categoria
+       ============================================================ -->
+  <div class="grafico-container">
+    <h2>Distribuicao por categoria</h2>
+    <canvas id="graficoCategoria"></canvas>
+  </div>
+
+  <!-- ============================================================
+       Filtros
+       ============================================================ -->
+  <div class="filtros">
+    <div>
+      <label for="busca">Buscar</label>
+      <input type="search" id="busca" placeholder="Numero, titulo, tag...">
+    </div>
+    <div>
+      <label for="filtroCategoria">Categoria</label>
+      <select id="filtroCategoria">
+        <option value="">Todas</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtroStatus">Status</label>
+      <select id="filtroStatus">
+        <option value="">Todos</option>
+        <option value="Vigente">Vigente</option>
+        <option value="Revogado">Revogado</option>
+        <option value="Desconhecido">Desconhecido</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtroAno">Ano</label>
+      <select id="filtroAno">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div>
+      <button class="btn" onclick="baixarCSV()">📥 Baixar CSV</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Tabela
+       ============================================================ -->
+  <div class="tabela-container">
+    <div class="tabela-header">
+      <span><span id="totalResultados">0</span> ato(s) encontrado(s)</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Numero</th>
+          <th>Titulo</th>
+          <th>Categoria</th>
+          <th>Status</th>
+          <th>Visto em</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaCorpo">
+        <tr><td colspan="5" class="vazio">Carregando dados...</td></tr>
+      </tbody>
+    </table>
+    <div class="paginacao">
+      <span id="paginaInfo">—</span>
+      <div>
+        <button id="btnPrev" onclick="paginaAnterior()">← Anterior</button>
+        <button id="btnNext" onclick="paginaProxima()">Proxima →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// Estado global da aplicacao
+// ============================================================
+let todosAtos = [];           // lista completa carregada do dados.json
+let atosFiltrados = [];       // lista apos aplicar filtros
+let paginaAtual = 1;
+const itensPorPagina = 20;
+
+// ============================================================
+// Inicializacao: carrega dados e configura interface
+// ============================================================
+async function inicializar() {
+  try {
+    // Carrega os dois arquivos JSON em paralelo
+    const [stats, dados] = await Promise.all([
+      fetch('stats.json').then(r => r.json()),
+      fetch('dados.json').then(r => r.json())
+    ]);
+
+    todosAtos = dados.atos;
+
+    renderizarEstatisticas(stats);
+    renderizarGrafico(stats);
+    popularFiltros(stats);
+    aplicarFiltros();
+
+  } catch (erro) {
+    console.error('Erro ao carregar dados:', erro);
+    document.getElementById('tabelaCorpo').innerHTML =
+      '<tr><td colspan="5" class="vazio">Erro ao carregar dados. Verifique se os arquivos JSON foram gerados.</td></tr>';
+  }
+}
+
+// ============================================================
+// Renderiza os 5 cards no topo
+// ============================================================
+function renderizarEstatisticas(stats) {
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statVigentes').textContent = stats.vigentes;
+  document.getElementById('statRevogados').textContent = stats.revogados;
+  document.getElementById('statNovos30').textContent = stats.novos_ultimos_30_dias;
+  document.getElementById('statCategorias').textContent = Object.keys(stats.por_categoria).length;
+
+  // Formata a data da ultima atualizacao no padrao brasileiro
+  const dt = new Date(stats.ultima_atualizacao);
+  document.getElementById('ultimaAtualizacao').textContent =
+    dt.toLocaleDateString('pt-BR') + ' as ' + dt.toLocaleTimeString('pt-BR');
+}
+
+// ============================================================
+// Grafico de pizza com Chart.js
+// ============================================================
+function renderizarGrafico(stats) {
+  const ctx = document.getElementById('graficoCategoria').getContext('2d');
+  const labels = Object.keys(stats.por_categoria);
+  const valores = Object.values(stats.por_categoria);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: ['#1351b4', '#168821', '#f0a800', '#c53727', '#5e2b6c'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right' }
+      }
+    }
+  });
+}
+
+// ============================================================
+// Popula os selects de Categoria e Ano com valores reais
+// ============================================================
+function popularFiltros(stats) {
+  const selCat = document.getElementById('filtroCategoria');
+  Object.keys(stats.por_categoria).forEach(nome => {
+    const opt = document.createElement('option');
+    opt.value = nome;
+    opt.textContent = nome;
+    selCat.appendChild(opt);
+  });
+
+  const selAno = document.getElementById('filtroAno');
+  Object.keys(stats.por_ano).forEach(ano => {
+    const opt = document.createElement('option');
+    opt.value = ano;
+    opt.textContent = ano;
+    selAno.appendChild(opt);
+  });
+
+  // Listeners: qualquer mudanca nos filtros reaplica a tabela
+  ['busca', 'filtroCategoria', 'filtroStatus', 'filtroAno'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      paginaAtual = 1;
+      aplicarFiltros();
+    });
+  });
+}
+
+// ============================================================
+// Aplica filtros sobre todosAtos e renderiza tabela
+// ============================================================
+function aplicarFiltros() {
+  const busca = document.getElementById('busca').value.toLowerCase().trim();
+  const categoria = document.getElementById('filtroCategoria').value;
+  const status = document.getElementById('filtroStatus').value;
+  const ano = document.getElementById('filtroAno').value;
+
+  atosFiltrados = todosAtos.filter(a => {
+    if (categoria && a.categoria_nome !== categoria) return false;
+    if (status && a.status !== status) return false;
+    if (ano && String(a.ano) !== ano) return false;
+    if (busca) {
+      const texto = (a.titulo + ' ' + a.numero + ' ' + a.categoria_nome).toLowerCase();
+      if (!texto.includes(busca)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('totalResultados').textContent = atosFiltrados.length;
+  renderizarTabela();
+}
+
+// ============================================================
+// Desenha a tabela com paginacao
+// ============================================================
+function renderizarTabela() {
+  const tbody = document.getElementById('tabelaCorpo');
+
+  if (atosFiltrados.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum ato corresponde aos filtros aplicados.</td></tr>';
+    document.getElementById('paginaInfo').textContent = '—';
+    document.getElementById('btnPrev').disabled = true;
+    document.getElementById('btnNext').disabled = true;
+    return;
+  }
+
+  const totalPaginas = Math.ceil(atosFiltrados.length / itensPorPagina);
+  if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+
+  const inicio = (paginaAtual - 1) * itensPorPagina;
+  const fim = inicio + itensPorPagina;
+  const slice = atosFiltrados.slice(inicio, fim);
+
+  tbody.innerHTML = slice.map(a => `
+    <tr>
+      <td><a href="${a.url}" target="_blank" rel="noopener">${escapar(a.numero || '—')}</a></td>
+      <td>${escapar(a.titulo)}</td>
+      <td>${escapar(a.categoria_nome)}</td>
+      <td><span class="status-pill status-${a.status}">${a.status}</span></td>
+      <td>${formatarData(a.primeira_vez_visto)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('paginaInfo').textContent =
+    `Pagina ${paginaAtual} de ${totalPaginas}`;
+  document.getElementById('btnPrev').disabled = paginaAtual <= 1;
+  document.getElementById('btnNext').disabled = paginaAtual >= totalPaginas;
+}
+
+function paginaAnterior() {
+  if (paginaAtual > 1) { paginaAtual--; renderizarTabela(); }
+}
+function paginaProxima() {
+  const totalPaginas = Math.ceil(atosFiltrados.length / itensPorPagina);
+  if (paginaAtual < totalPaginas) { paginaAtual++; renderizarTabela(); }
+}
+
+// ============================================================
+// Exportar CSV no padrao brasileiro (separador ; , decimal ,)
+// ============================================================
+function baixarCSV() {
+  if (atosFiltrados.length === 0) {
+    alert('Nenhum dado para exportar com os filtros atuais.');
+    return;
+  }
+
+  // BOM UTF-8 para o Excel abrir com acentos certos
+  const BOM = '\uFEFF';
+  const sep = ';';
+
+  const cabecalho = ['Numero', 'Titulo', 'Categoria', 'Status', 'Ano', 'Visto em', 'URL'].join(sep);
+  const linhas = atosFiltrados.map(a => [
+    escapeCSV(a.numero),
+    escapeCSV(a.titulo),
+    escapeCSV(a.categoria_nome),
+    escapeCSV(a.status),
+    escapeCSV(a.ano),
+    escapeCSV(formatarData(a.primeira_vez_visto)),
+    escapeCSV(a.url)
+  ].join(sep));
+
+  const csv = BOM + cabecalho + '\n' + linhas.join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `monitor-anatel-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function escapar(str) {
+  // Previne XSS: escapa caracteres HTML especiais
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function escapeCSV(str) {
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  // Se contem ; , aspas ou quebra de linha, envolve em aspas e escapa aspas internas
+  if (/[";\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function formatarData(iso) {
+  if (!iso) return '—';
+  try {
+    const dt = new Date(iso);
+    return dt.toLocaleDateString('pt-BR');
+  } catch (e) {
+    return iso;
+  }
+}
+
+// Inicializa quando a pagina carrega
+window.addEventListener('DOMContentLoaded', inicializar);
+</script>
+
+</body>
+</html>
