@@ -1,6 +1,33 @@
+# Credenciais e configurações locais (NUNCA commitar)
 .env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+secrets.json
+
+# Ambiente virtual Python
 .venv/
+venv/
+env/
+
+# Cache Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Logs
 monitor.log
-relatorios/
+*.log
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.swp
