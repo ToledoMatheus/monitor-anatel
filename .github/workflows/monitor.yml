@@ -38,11 +38,14 @@ jobs:
           SEND_EMAIL_IF_NO_CHANGES: ${{ vars.SEND_EMAIL_IF_NO_CHANGES || '0' }}
         run: python monitor_anatel.py
 
+      - name: Gerar dashboard estatico
+        run: python gerar_dashboard.py
+
       - name: Commitar estado e relatorio
         run: |
           git config user.name  "monitor-anatel-bot"
           git config user.email "monitor-anatel-bot@users.noreply.github.com"
-          git add anatel_state.sqlite3 relatorios/ 2>/dev/null || true
+          git add anatel_state.sqlite3 relatorios/ docs/ 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "Atualizar estado e relatorio - $(date -u +%Y-%m-%d)"
             git push
