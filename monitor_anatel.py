@@ -245,36 +245,37 @@ def parse_detalhe(html: str) -> tuple[str, str]:
     """
     soup = BeautifulSoup(html, "html.parser")
 
-    # Tenta isolar o conteudo principal. O portal usa Joomla; o conteudo
-    # normalmente fica dentro de um <div class="item-page"> ou similar.
+    # Parte principal usada apenas para gerar o hash do conteúdo
     main = (
         soup.find("div", class_=re.compile(r"item-page|content|article|main", re.I))
         or soup.body
         or soup
     )
 
-    texto = main.get_text("\n", strip=True)
+    texto_principal = main.get_text("\n", strip=True)
 
-    # Texto normalizado para detectar status mesmo com acento:
-    # ResoluçãoVigente -> resolucaovigente
-    # Ato Vigente -> atovigente
-    texto_norm = normalizar_texto(texto)
+    # Para detectar status, usamos a página inteira,
+    # porque AtoVigente / ResoluçãoVigente fica em "Assunto(s)" no final da página.
+    texto_pagina_inteira = soup.get_text("\n", strip=True)
+    texto_norm = normalizar_texto(texto_pagina_inteira)
 
     status = "Desconhecido"
 
-    # Primeiro procura padrões mais específicos
     if re.search(r"(ato|resolucao|sumula|portaria)\w*revogad[oa]", texto_norm):
         status = "Revogado"
     elif re.search(r"(ato|resolucao|sumula|portaria)\w*vigente", texto_norm):
         status = "Vigente"
-
-    # Fallback mais genérico
-    elif "revogado" in texto_norm or "revogada" in texto_norm:
+    elif "atorevogado" in texto_norm or "resolucaorevogada" in texto_norm:
         status = "Revogado"
-    elif "vigente" in texto_norm:
+    elif "atovigente" in texto_norm or "resolucaovigente" in texto_norm:
         status = "Vigente"
 
-    content_hash = hashlib.sha256(texto.encode("utf-8", errors="ignore")).hexdigest()
+    content_hash = hashlib.sha256(
+        texto_principal.encode("utf-8", errors="ignore")
+    ).hexdigest()
+
+    log.info("Status detectado: %s", status)
+
     return status, content_hash
 
 # ---------------------------------------------------------------------------
