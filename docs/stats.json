@@ -1,8 +1,8 @@
 {
   "total": 10,
-  "vigentes": 0,
+  "vigentes": 10,
   "revogados": 0,
-  "desconhecidos": 10,
+  "desconhecidos": 0,
   "novos_ultimos_30_dias": 10,
   "por_categoria": {
     "Atos de Requisitos Tecnicos de Gestao do Espectro": 2,
@@ -12,5 +12,5 @@
   "por_ano": {
     "2026": 10
   },
-  "ultima_atualizacao": "2026-05-29T01:21:41+00:00"
+  "ultima_atualizacao": "2026-05-29T01:32:10+00:00"
 }
