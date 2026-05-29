@@ -407,9 +407,10 @@ const itensPorPagina = 20;
 async function inicializar() {
   try {
     // Carrega os dois arquivos JSON em paralelo
+    const versao = Date.now();
     const [stats, dados] = await Promise.all([
-      fetch('stats.json').then(r => r.json()),
-      fetch('dados.json').then(r => r.json())
+      fetch(`stats.json?v=${versao}`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`dados.json?v=${versao}`, { cache: 'no-store' }).then(r => r.json())
     ]);
 
     todosAtos = dados.atos;
