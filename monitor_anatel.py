@@ -237,45 +237,6 @@ def normalizar_texto(texto: str) -> str:
     return texto
 #-------------------------------------------------------------------------------------------------
 
-"""def parse_detalhe(html: str) -> tuple[str, str]:
-    """Retorna (status, content_hash) da pagina de detalhe de um ato.
-
-    - status: "Vigente", "Revogado" ou "Desconhecido"
-    - content_hash: sha256 do corpo principal, ignorando menu e rodape
-    """
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Tenta isolar o conteudo principal. O portal usa Joomla; o conteudo
-    # normalmente fica dentro de um <div class="item-page"> ou similar.
-    main = (
-        soup.find("div", class_=re.compile(r"item-page|content|article|main", re.I))
-        or soup.body
-        or soup
-    )
-    texto = main.get_text("\n", strip=True)
-
-    status = "Desconhecido"
-    texto_lower = texto.lower()
-    # A pagina marca o status como tag no rodape de assuntos. Os padroes conhecidos sao:
-    #   AtoVigente / AtoRevogado          (Atos)
-    #   ResolucaoVigente / ResolucaoRevogada  (Resolucoes)
-    #   SumulaVigente / SumulaRevogada    (Sumulas)
-    #   PortariaVigente / PortariaRevogada (Portarias)
-    # Removemos espacos antes de comparar para tolerar variacoes de formatacao.
-    texto_sem_espacos = texto_lower.replace(" ", "")
-    if re.search(r"(ato|resolucao|sumula|portaria)\w*revogad[oa]", texto_sem_espacos):
-        status = "Revogado"
-    elif re.search(r"(ato|resolucao|sumula|portaria)\w*vigente", texto_sem_espacos):
-        status = "Vigente"
-    # Fallback: procura "revogado" / "vigente" no texto
-    elif re.search(r"\brevogad[oa]\b", texto_lower):
-        status = "Revogado"
-    elif re.search(r"\bvigente\b", texto_lower):
-        status = "Vigente"
-
-    content_hash = hashlib.sha256(texto.encode("utf-8", errors="ignore")).hexdigest()
-    return status, content_hash"""
-
 def parse_detalhe(html: str) -> tuple[str, str]:
     """Retorna (status, content_hash) da pagina de detalhe de um ato.
 
