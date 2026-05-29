@@ -420,3 +420,8 @@ Pull requests bem-vindos.
 
 Uso pessoal e profissional permitido. Os dados monitorados sao publicos
 e pertencem a Anatel. Este projeto apenas facilita o acompanhamento.
+
+## Autor
+   Matheus Toledo — [LinkedIn](https://www.linkedin.com/in/matheus-rubim-de-toledo-a32aa0285/)
+   Estudante de engenharia de Telecomunicações.
+   Projeto criado em 2026 como ferramenta interna de acompanhamento regulatório.
