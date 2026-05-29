@@ -30,6 +30,7 @@ import smtplib
 import sqlite3
 import sys
 import time
+import unicodedata # Corrigir o parser (acentos)
 from dataclasses import dataclass
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -213,9 +214,30 @@ def parse_listagem(html: str, category_slug: str, year: int) -> list[Ato]:
         )
 
     return list(atos.values())
+#-------------------------------------------------------------------------------------------------
+def normalizar_texto(texto: str) -> str:
+    """
+    Normaliza texto para facilitar buscas:
+    - remove acentos
+    - converte para minúsculas
+    - remove espaços e símbolos
 
+    Exemplo:
+    'Resolução Vigente' -> 'resolucaovigente'
+    'AtoVigente' -> 'atovigente'
+    """
+    if not texto:
+        return ""
 
-def parse_detalhe(html: str) -> tuple[str, str]:
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    texto = texto.lower()
+    texto = re.sub(r"[^a-z0-9]", "", texto)
+
+    return texto
+#-------------------------------------------------------------------------------------------------
+
+"""def parse_detalhe(html: str) -> tuple[str, str]:
     """Retorna (status, content_hash) da pagina de detalhe de um ato.
 
     - status: "Vigente", "Revogado" ou "Desconhecido"
@@ -252,8 +274,47 @@ def parse_detalhe(html: str) -> tuple[str, str]:
         status = "Vigente"
 
     content_hash = hashlib.sha256(texto.encode("utf-8", errors="ignore")).hexdigest()
-    return status, content_hash
+    return status, content_hash"""
 
+def parse_detalhe(html: str) -> tuple[str, str]:
+    """Retorna (status, content_hash) da pagina de detalhe de um ato.
+
+    - status: "Vigente", "Revogado" ou "Desconhecido"
+    - content_hash: sha256 do corpo principal, ignorando menu e rodape
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Tenta isolar o conteudo principal. O portal usa Joomla; o conteudo
+    # normalmente fica dentro de um <div class="item-page"> ou similar.
+    main = (
+        soup.find("div", class_=re.compile(r"item-page|content|article|main", re.I))
+        or soup.body
+        or soup
+    )
+
+    texto = main.get_text("\n", strip=True)
+
+    # Texto normalizado para detectar status mesmo com acento:
+    # ResoluçãoVigente -> resolucaovigente
+    # Ato Vigente -> atovigente
+    texto_norm = normalizar_texto(texto)
+
+    status = "Desconhecido"
+
+    # Primeiro procura padrões mais específicos
+    if re.search(r"(ato|resolucao|sumula|portaria)\w*revogad[oa]", texto_norm):
+        status = "Revogado"
+    elif re.search(r"(ato|resolucao|sumula|portaria)\w*vigente", texto_norm):
+        status = "Vigente"
+
+    # Fallback mais genérico
+    elif "revogado" in texto_norm or "revogada" in texto_norm:
+        status = "Revogado"
+    elif "vigente" in texto_norm:
+        status = "Vigente"
+
+    content_hash = hashlib.sha256(texto.encode("utf-8", errors="ignore")).hexdigest()
+    return status, content_hash
 
 # ---------------------------------------------------------------------------
 # Estado em SQLite
