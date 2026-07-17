@@ -1,16 +1,16 @@
 {
-  "total": 11,
+  "total": 12,
   "vigentes": 11,
   "revogados": 0,
-  "desconhecidos": 0,
-  "novos_ultimos_30_dias": 1,
+  "desconhecidos": 1,
+  "novos_ultimos_30_dias": 2,
   "por_categoria": {
     "Atos de Requisitos Tecnicos de Gestao do Espectro": 2,
     "Atos de Certificacao de Produtos": 5,
-    "Resolucoes": 4
+    "Resolucoes": 5
   },
   "por_ano": {
-    "2026": 11
+    "2026": 12
   },
-  "ultima_atualizacao": "2026-07-16T13:40:50+00:00"
+  "ultima_atualizacao": "2026-07-17T13:19:24+00:00"
 }
