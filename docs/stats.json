@@ -3,7 +3,7 @@
   "vigentes": 12,
   "revogados": 1,
   "desconhecidos": 1,
-  "novos_ultimos_30_dias": 4,
+  "novos_ultimos_30_dias": 3,
   "por_categoria": {
     "Atos de Certificacao de Produtos": 6,
     "Atos de Requisitos Tecnicos de Gestao do Espectro": 2,
@@ -12,5 +12,5 @@
   "por_ano": {
     "2026": 14
   },
-  "ultima_atualizacao": "2026-08-14T12:55:32+00:00"
+  "ultima_atualizacao": "2026-08-17T12:34:43+00:00"
 }
