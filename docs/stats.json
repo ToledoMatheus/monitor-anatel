@@ -1,7 +1,7 @@
 {
   "total": 19,
-  "vigentes": 15,
-  "revogados": 3,
+  "vigentes": 13,
+  "revogados": 5,
   "desconhecidos": 1,
   "novos_ultimos_30_dias": 2,
   "por_categoria": {
@@ -12,5 +12,5 @@
   "por_ano": {
     "2026": 19
   },
-  "ultima_atualizacao": "2026-11-20T19:33:14+00:00"
+  "ultima_atualizacao": "2026-11-23T23:17:56+00:00"
 }
